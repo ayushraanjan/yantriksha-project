@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
-from django.http import StreamingHttpResponse
 from twilio.rest import Client
-alert_sent = False
 
 
 TWILIO_ACCOUNT_SID = 'AC56b4f427fa04f084c2b8d94ff48f0be2'
@@ -10,18 +8,19 @@ TWILIO_AUTH_TOKEN = '5cb7c369000fa8b2164480715a528358'
 TWILIO_PHONE_NUMBER = '+12072887804'
 EMERGENCY_PHONE_NUMBER = '+919064295486'
 
+alert_sent = False
+
 def send_emergency_alert():
     client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
     message = client.messages.create(
-        body="Emergency alert! Captive situation detected",
+        body="Emergency alert! A gesture was detected.",
         from_=TWILIO_PHONE_NUMBER,
         to=EMERGENCY_PHONE_NUMBER
     )
     print("Alert sent with SID:", message.sid)
 
 def detect_gesture(frame):
-    
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     _, thresh = cv2.threshold(blurred, 60, 255, cv2.THRESH_BINARY_INV)
@@ -36,23 +35,23 @@ def detect_gesture(frame):
 
     return False
 
-def gen(camera):
-    
+def main():
+    global alert_sent
+    camera = cv2.VideoCapture(0)
+
     while True:
-        ret, frame = camera.read(0)
+        ret, frame = camera.read()
         if not ret:
             break
 
         if detect_gesture(frame) and not alert_sent:
-            # Trigger emergency action
             send_emergency_alert()
+            alert_sent = True
+        elif not detect_gesture(frame):
+            alert_sent = False
 
-        _, jpeg = cv2.imencode('.jpg', frame)
-        frame = jpeg.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+    camera.release()
+    cv2.destroyAllWindows()
 
-def video_feed(request):
-    camera = cv2.VideoCapture(0)
-    return StreamingHttpResponse(gen(camera),
-                                 content_type='multipart/x-mixed-replace; boundary=frame')
+if __name__ == "__main__":
+    main()
