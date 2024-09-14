@@ -4,7 +4,7 @@ from twilio.rest import Client
 
 
 TWILIO_ACCOUNT_SID = 'AC56b4f427fa04f084c2b8d94ff48f0be2'
-TWILIO_AUTH_TOKEN = '5cb7c369000fa8b2164480715a528358'
+TWILIO_AUTH_TOKEN = '[Replace with your Twilio Auth Token]'
 TWILIO_PHONE_NUMBER = '+12072887804'
 EMERGENCY_PHONE_NUMBER = '+919064295486'
 
@@ -47,8 +47,11 @@ def main():
         if detect_gesture(frame) and not alert_sent:
             send_emergency_alert()
             alert_sent = True
-        elif not detect_gesture(frame):
-            alert_sent = False
+
+        cv2.imshow('Camera Preview', frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
     camera.release()
     cv2.destroyAllWindows()
